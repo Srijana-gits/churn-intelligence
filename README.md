@@ -4,7 +4,7 @@ Turning a customer churn dataset into a retention decision: who is leaving, what
 that is associated with, who is likely to leave next, and — given limited
 retention budget — who the company should actually contact first.
 
-> **Status:** in progress. Stage 1 of 7 complete (data acquired and validated).
+> **Status:** in progress. Stage 2 of 7 complete (data cleaned and documented).
 
 ---
 
@@ -37,13 +37,23 @@ will change that. Interventions discussed in this project are treated as
 The raw file is **not committed** (see `.gitignore`). To reproduce, place
 `telco_customer_churn.csv` in `data/raw/` and run the validation script below.
 
-### Known data quality issues
+### Data quality issues and how they were handled
 
-| Issue | Detail | Handling |
+Full evidence and reasoning for each decision is in
+**[`docs/data_dictionary.md`](docs/data_dictionary.md)**.
+
+Cleaning fixes what is **wrong** and changes nothing else. Of the four issues
+investigated, only one was a data-quality problem; the rest are questions about how
+to *represent* the data for a model, and are deferred to the Stage 5 preprocessing
+pipeline where they can be fitted on training data and swapped freely.
+
+| Issue | Detail | Resolution |
 |---|---|---|
-| `TotalCharges` is text | 11 rows contain a blank string, forcing the whole column to load as text | Stage 2 |
-| Those 11 rows | All have `tenure = 0` and all have `Churn = No` — new customers never billed. Structurally missing, not randomly missing | Stage 2 |
-| Redundant category labels | `"No internet service"` / `"No phone service"` duplicate information already in `InternetService` / `PhoneService` | Stage 2 |
+| `TotalCharges` is text | 11 rows contain a blank string, forcing the column to load as text | **Fixed** — set to `0.0`. These are exactly the `tenure = 0` rows, so zero is the true value, not an estimate |
+| Those 11 rows | All `Churn = No`, and no customer with `tenure = 0` *can* be labelled churned — their label is definitional, not observed | Kept; flagged for possible exclusion from model training in Stage 5 |
+| Redundant category labels | `"No internet service"` is bit-identical to `InternetService = "No"` across six columns — naive one-hot encoding yields 7 duplicate dummies | **Kept as-is.** An encoding decision, not a data-quality one — deferred to Stage 5 |
+| `SeniorCitizen` coded `0/1` | Would be picked up by dtype-based column routing and scaled as a numeric feature | **Kept as-is.** Fixed in Stage 5 by naming columns explicitly instead of inferring from dtype |
+| `TotalCharges` collinearity | `R² = 0.895` against `tenure + MonthlyCharges` (VIF 9.5); flips sign when fitted alongside them | **Kept as-is** — deferred to Stage 5 |
 | Class imbalance | 26.5% positive class — accuracy is a misleading metric here | Stages 5–6 |
 
 ---
