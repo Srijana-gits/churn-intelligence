@@ -22,3 +22,6 @@ data/processed/*
 
 # OS
 .DS_Store
+
+# Trained models — rebuilt by src/train_model.py
+models/

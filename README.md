@@ -88,7 +88,7 @@ reports/           figures and written findings
 - [x] **1. Foundation & data validation** — environment, repo scaffold, schema checks
 - [x] **2. Cleaning & data dictionary** — one data fix; representation decisions deferred
 - [x] **3. EDA & business analysis** — who is churning, statistical testing, revenue at risk
-- [ ] **4. Feature engineering & modeling** — logistic regression, then a tree-based model
+- [x] **4. Feature engineering & modeling** — logistic regression, then a tree-based model
 - [ ] **5. Evaluation, interpretation & threshold selection**
 - [ ] **6. Retention prioritization, dashboard & findings**
 
@@ -186,7 +186,42 @@ is not the same as controlling for confounding.
 Every "we should offer X to segment Y" idea remains a hypothesis requiring an
 experiment.
 
-### A limitation that shapes Stage 4
+### Modeling (Stage 4)
+
+Full comparison in [`notebooks/03_modeling.ipynb`](notebooks/03_modeling.ipynb).
+Cross-validated on the training set only; **the test set is untouched until Stage 5.**
+
+| | accuracy | precision | recall | F1 | ROC-AUC |
+|---|---|---|---|---|---|
+| Predict nobody churns | 0.734 | 0.000 | 0.000 | 0.000 | — |
+| Rule: month-to-month | 0.655 | 0.428 | 0.885 | 0.577 | — |
+| **Logistic regression** | 0.800 | 0.648 | 0.538 | 0.588 | **0.844** |
+| Gradient boosting | 0.802 | 0.659 | 0.529 | 0.587 | 0.850 |
+
+The more *accurate* baseline is the useless one — it flags nobody. That is why
+accuracy is not the target.
+
+**Three decisions and their evidence:**
+
+- **`MonthlyCharges` dropped.** It is a deterministic sum of the service columns
+  (R² = 0.9988 against them, VIF 878) — regressing it on those columns recovers
+  the price list exactly: base \$24.95, fiber +\$24.95, phone +\$20.06, streaming
+  +\$9.97 each. Dropping it cost 0.002 ROC-AUC and removed the collinearity that
+  was flipping `TotalCharges`' sign positive.
+- **No class weighting or resampling.** `class_weight="balanced"` left ROC-AUC
+  unchanged and the ranking correlated at 0.9995 — it only moves the threshold —
+  while pushing the mean out-of-fold probability to 0.414 against a true rate of
+  0.266. Stage 6 needs calibrated probabilities, so the threshold moves in Stage 5.
+- **Logistic regression over gradient boosting.** The tree wins ROC-AUC by 0.006
+  (5/5 folds) but is inconsistent on PR-AUC (3/5), the metric that matters more
+  for a retention list. A flexible model finding almost nothing extra is itself a
+  result: the structure here is close to linear in log-odds.
+
+At the default 0.5 threshold the model's recall (0.538) is *worse* than the dumb
+rule's (0.885). The model ranks far better; the cut-off simply has not been
+chosen yet. That is Stage 5's main job.
+
+### A limitation that shapes the modeling
 
 This dataset is a **snapshot**. Every column is measured at one moment and `Churn`
 means *left within the last month* — there is no observation window, event date or
