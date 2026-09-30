@@ -69,8 +69,8 @@ INTERNET_SERVICE_COLUMNS = [
 ]
 
 # customerID identifies a customer; it carries no information about churn.
-# We keep it in the cleaned file (SQL joins in Stage 3 and customer-level risk
-# scores in Stage 6 both need it) but it must never be used as a model feature.
+# We keep it in the cleaned file (customer-level risk scores in Stage 5 and
+# retention prioritisation in Stage 6 need it) but it is never a model feature.
 ID_COLUMN = "customerID"
 TARGET_COLUMN = "Churn"
 

@@ -25,8 +25,8 @@ Unique customer key, e.g. `7590-VHVEG`. Unique across all 7,043 rows.
 
 **Must be excluded from modeling features.** It is arbitrary and carries no
 information about churn; including it invites the model to memorise individuals.
-It is kept in the cleaned file because Stage 3 (SQL joins) and Stage 6
-(customer-level risk scores) both need to identify customers.
+It is kept in the cleaned file because customer-level risk scores (Stage 5) and
+retention prioritisation (Stage 6) both need to identify customers.
 
 ---
 
@@ -219,7 +219,7 @@ bit-identical dummy variables** — perfect multicollinearity.
 **Decision.** Keep all three levels. The redundancy is real, but *how to encode a
 column for a model* is a modeling decision, not a data-quality one. Nothing about
 these values is **incorrect** — they are merely inconvenient for one family of
-models, and they are directly useful for SQL aggregation and EDA, which need no
+models, and they are directly useful for aggregation and EDA, which need no
 encoding at all.
 
 **Why not collapse here.** Collapsing would bake one modeling choice into the file
@@ -253,7 +253,8 @@ categorical_features = [c for c in X.columns if c not in numeric_features]
 Explicit column lists are more robust than `select_dtypes` regardless — they fail
 loudly when a column is added or renamed rather than silently re-routing it.
 
-**Note for SQL (Stage 3):** senior customers are `SeniorCitizen = 1`, not `'Yes'`.
+**Note for reporting:** senior customers are `SeniorCitizen = 1`, not `'Yes'`. A
+dashboard should relabel this for readers; the stored data stays as-is.
 
 ### 4. `TotalCharges` — retained, flagged
 
