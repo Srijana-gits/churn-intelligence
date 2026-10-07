@@ -1,60 +1,43 @@
-# Churn Intelligence — Telco Customer Retention Analysis
+# Churn Intelligence — Telco Customer Retention
 
-Turning a customer churn dataset into a retention decision: who is leaving, what
-that is associated with, who is likely to leave next, and — given limited
-retention budget — who the company should actually contact first.
+Which telecom customers are leaving, what they have in common, who is likely to
+leave next, and who the company should contact first.
 
-> **Status:** in progress. Stage 2 of 7 complete (data cleaned and documented).
+> **Status:** Stages 1–5 done. Next: retention priority list and dashboard.
 
 ---
 
-## The business question
+## The questions
 
-> How can a telecommunications company understand customer churn, identify
-> customers at risk of leaving, and prioritize retention efforts?
+1. **Who is churning?**
+2. **What is churn linked to?** (linked, not caused)
+3. **Who is likely to churn?** (a model that scores each customer)
+4. **Who should we contact first?** (risk combined with customer value)
 
-Four questions structure the work:
-
-1. **Who is churning?** — churn rates across contract type, tenure, services, payment method.
-2. **Why are they churning?** — variables *associated* with churn, stated as association, not cause.
-3. **Who is likely to churn?** — a predictive model producing customer-level churn probabilities.
-4. **Who should be prioritized?** — churn risk combined with customer value, with the assumptions made explicit.
-
-A churn model predicts *who leaves*. It does not prove that any retention offer
-will change that. Interventions discussed in this project are treated as
-**hypotheses to be tested by experiment**, not as established facts.
+A model can say who is likely to leave. It can't say whether an offer will make
+them stay. That needs a real test.
 
 ---
 
 ## Data
 
-**IBM Telco Customer Churn** — the standard 21-column version.
+**IBM Telco Customer Churn**: 7,043 customers, 21 columns, one row per customer.
+**26.5% churned** (1,869 customers).
 
-- 7,043 customers, one row each, `customerID` unique
-- Target: `Churn` (Yes/No)
-- **Baseline churn rate: 26.54%** (1,869 churned / 5,174 retained)
+The raw file isn't committed. To run the project, put `telco_customer_churn.csv`
+in `data/raw/`.
 
-The raw file is **not committed** (see `.gitignore`). To reproduce, place
-`telco_customer_churn.csv` in `data/raw/` and run the validation script below.
+### Cleaning
 
-### Data quality issues and how they were handled
+Full details are in [`docs/data_dictionary.md`](docs/data_dictionary.md).
 
-Full evidence and reasoning for each decision is in
-**[`docs/data_dictionary.md`](docs/data_dictionary.md)**.
-
-Cleaning fixes what is **wrong** and changes nothing else. Of the four issues
-investigated, only one was a data-quality problem; the rest are questions about how
-to *represent* the data for a model, and are deferred to the Stage 5 preprocessing
-pipeline where they can be fitted on training data and swapped freely.
-
-| Issue | Detail | Resolution |
-|---|---|---|
-| `TotalCharges` is text | 11 rows contain a blank string, forcing the column to load as text | **Fixed** — set to `0.0`. These are exactly the `tenure = 0` rows, so zero is the true value, not an estimate |
-| Those 11 rows | All `Churn = No`, and no customer with `tenure = 0` *can* be labelled churned — their label is definitional, not observed | Kept; flagged for possible exclusion from model training in Stage 5 |
-| Redundant category labels | `"No internet service"` is bit-identical to `InternetService = "No"` across six columns — naive one-hot encoding yields 7 duplicate dummies | **Kept as-is.** An encoding decision, not a data-quality one — deferred to Stage 5 |
-| `SeniorCitizen` coded `0/1` | Would be picked up by dtype-based column routing and scaled as a numeric feature | **Kept as-is.** Fixed in Stage 5 by naming columns explicitly instead of inferring from dtype |
-| `TotalCharges` collinearity | `R² = 0.895` against `tenure + MonthlyCharges` (VIF 9.5); flips sign when fitted alongside them | **Kept as-is** — deferred to Stage 5 |
-| Class imbalance | 26.5% positive class — accuracy is a misleading metric here | Stages 5–6 |
+| Issue | What we did |
+|---|---|
+| `TotalCharges` had 11 blank values | Set them to 0. These customers are brand new (tenure 0), so 0 is correct |
+| Those 11 new customers | Left out of the model. They can't have churned yet |
+| "No internet service" repeats `InternetService = No` | Merged into "No" when modeling |
+| `SeniorCitizen` stored as 0/1 | Treated as a category, not a number |
+| `TotalCharges` overlaps with tenure and monthly charges | Not used in the model |
 
 ---
 
@@ -65,170 +48,126 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python src/validate_raw.py   # verifies the raw file matches the expected schema
+python src/validate_raw.py   # check the raw file
+python src/clean_data.py     # build data/processed/telco_clean.csv
+python src/train_model.py    # train and save the model
 ```
+
+Run the cleaning script before opening the notebooks.
 
 ---
 
-## Repository structure
+## Project layout
 
 ```
-data/raw/          raw dataset (not committed)
-data/processed/    cleaned outputs (not committed, rebuilt by script)
-notebooks/         exploratory analysis
-src/               reusable scripts
-dashboard/         Power BI / Tableau files
-reports/           figures and written findings
+data/raw/          raw data (not committed)
+data/processed/    cleaned data (not committed)
+notebooks/         analysis notebooks
+src/               scripts
+dashboard/         dashboard files
+reports/figures/   charts
 ```
 
 ---
 
 ## Roadmap
 
-- [x] **1. Foundation & data validation** — environment, repo scaffold, schema checks
-- [x] **2. Cleaning & data dictionary** — one data fix; representation decisions deferred
-- [x] **3. EDA & business analysis** — who is churning, statistical testing, revenue at risk
-- [x] **4. Feature engineering & modeling** — logistic regression, then a tree-based model
-- [ ] **5. Evaluation, interpretation & threshold selection**
-- [ ] **6. Retention prioritization, dashboard & findings**
+- [x] 1. Setup and data checks
+- [x] 2. Cleaning
+- [x] 3. Exploratory analysis ([notebook](notebooks/02_exploratory_analysis.ipynb))
+- [x] 4. Modeling ([notebook](notebooks/03_modeling.ipynb))
+- [x] 5. Evaluation ([notebook](notebooks/04_evaluation.ipynb))
+- [ ] 6. Priority list, dashboard and final findings
 
 ---
 
-## Findings so far
+## Findings
 
-Baseline churn rate: **26.54%** (1,869 of 7,043 customers).
-Full analysis in [`notebooks/02_exploratory_analysis.ipynb`](notebooks/02_exploratory_analysis.ipynb).
+Everything below shows which traits go **together** with churn, not what causes it.
 
-All statements below describe **association**, not cause. This is observational
-data — customers chose their own contracts, plans and payment methods.
-
-### Who is churning
+### Who churns
 
 ![Highest churn rates by group](reports/figures/01_top_churn_groups.png)
 
-| Variable | Range | Spread |
+| Group | Lowest churn | Highest churn |
 |---|---|---|
-| `tenure` | 49–72 months 9.5% → 1–6 months 53.3% | 43.8pp |
-| `Contract` | Two year 2.8% → Month-to-month 42.7% | 39.9pp |
-| `InternetService` | No internet 7.4% → Fiber optic 41.9% | 34.5pp |
-| `PaymentMethod` | Credit card 15.2% → Electronic check 45.3% | 30.1pp |
-| `OnlineSecurity` (internet subscribers) | has it 14.6% → lacks it 41.8% | 27.2pp |
+| Tenure | 49–72 months: 9.5% | 1–6 months: 53.3% |
+| Contract | Two year: 2.8% | Month-to-month: 42.7% |
+| Internet | None: 7.4% | Fiber optic: 41.9% |
+| Payment | Credit card: 15.2% | Electronic check: 45.3% |
+| Online security | Has it: 14.6% | Doesn't: 41.8% |
 
-The sharpest segments combine variables: **month-to-month + fiber optic churns at
-54.6% across 2,128 customers** — 30% of the customer base in a single high-risk
-group. Tenure does not offset contract type: month-to-month customers of 49–72
-months still churn at 26.0%, versus 3.3% for two-year customers of equal tenure.
+- **Highest-risk group:** month-to-month + fiber optic. 54.6% churn, and it's 30% of all customers.
+- **Contract matters more than loyalty.** Long-time month-to-month customers still churn at 26%, versus 3% on two-year contracts.
 
-### Effect size, not p-value
+### What doesn't matter much
 
-![Cramér's V by variable](reports/figures/05_effect_sizes.png)
+![Strength of each variable](reports/figures/05_effect_sizes.png)
 
-With n = 7,043, **14 of 16 variables reach p < 0.05** — so p-values alone would
-report fourteen findings. Cramér's V reduces that to a usable handful, and
-Bonferroni correction (α = 0.003125, for 16 tests) leaves **13**.
+With 7,000 customers almost everything looks "statistically significant", so we
+ranked variables by how **big** the difference is.
 
-`MultipleLines` is the cautionary case: p = 0.0035 clears the naive bar, **fails
-the correction**, and carries a 3.7pp spread that no retention budget should act
-on. The 0.1/0.3/0.5 labels on the chart are Cohen's conventions, not decision
-thresholds — the notebook ranks by V but judges by churn-rate spread.
+- **Gender:** no difference (26.2% vs 26.9%).
+- **Multiple lines** and **streaming:** tiny differences.
+- **Add-on services** (security, backup, etc.) look very protective, but partly
+  because customers who have them also tend to be long-term and on contracts.
+- **Payment:** only electronic check stands out. Mailed check looks like the automatic methods.
 
-### Notable negative findings
+### Billing from churned customers
 
-- **`gender` shows no association** — 26.2% vs 26.9%, V = 0.008, p = 0.487.
-- **`MultipleLines`: p = 0.0035, V = 0.040.** Significant by the naive bar, fails
-  Bonferroni, and practically irrelevant either way.
-- **Streaming services carry essentially no association.** Among internet subscribers
-  the gap is only 3.4pp, and in the *protective* direction. Their Cramér's V of 0.231
-  is an artefact of the `"No internet service"` level standing in for `InternetService`,
-  not a streaming effect.
-- **The protective-services gradient is substantially tenure and contract in disguise.**
-  Churn slides 56.7% → 5.3% across the count of protective add-ons held — but customers
-  holding none have a median tenure of 7 months and are 94.9% month-to-month, while
-  those holding all four are at 70 months and 7.2%. Holding contract constant, the
-  spread falls from 51.4pp to 35.6pp (58.5% → 22.9%). A substantial association
-  remains; about a third of the headline spread does not.
-- **Payment method is not "automatic vs manual".** Mailed check (31.6%) sits with
-  the automatic methods, not with electronic check (53.7%). Electronic check
-  specifically is the outlier.
-- **The `MonthlyCharges` relationship flattens at the top rather than reversing.**
-  Q4 36.1% vs Q5 32.8% is not statistically distinguishable (p = 0.065).
+![Monthly billing from churned customers](reports/figures/06_revenue_exposure.png)
 
-### Billing associated with churn
+Churned customers were 26.5% of customers but **30.5% of monthly billing**
+($139K of $456K). Month-to-month + fiber accounts for **72%** of that, mostly
+because it's a big group with high prices.
 
-![Monthly billing from churned customers, by segment](reports/figures/06_revenue_exposure.png)
+### What this data can't tell us
 
-Churned customers are **26.5% of the base but 30.5% of monthly billing**
-(\$139,131 of \$456,117). **Month-to-month + fiber optic accounts for 72.2%** of the
-billing attached to churned customers.
+Fiber customers churn much more than DSL customers (42% vs 19%). But they also pay
+more, use electronic check more, and are more often month-to-month. The data
+can't tell whether the cause is price, service quality or competitors.
 
-That 72.2% reflects **size, rate and price together**, and size does much of the
-work: 30.2% of customers → 62.2% of churners → 72.2% of churned billing. It is not
-evidence that the segment churns far more than every other — month-to-month +
-electronic check runs at nearly the same rate on a smaller, cheaper base.
+### Modeling
 
-The quantity is `MonthlyCharges × churn`, summed: **monthly billing that was being
-collected from customers who have since left**. Historical and descriptive — not
-lost revenue, profit, or a recovery target.
+| Model | Precision | Recall | ROC-AUC |
+|---|---|---|---|
+| Rule: flag all month-to-month | 0.43 | 0.89 | — |
+| **Logistic regression** (chosen) | 0.65 | 0.54 | **0.844** |
+| Gradient boosting | 0.66 | 0.53 | 0.850 |
 
-### What this analysis cannot establish
+- **Accuracy is misleading here.** Guessing "nobody churns" scores 73%.
+- **Logistic regression won.** Gradient boosting was barely better, and logistic regression is easier to explain.
+- **Monthly charges dropped.** It's just the sum of the services a customer has, so it added nothing new.
 
-Fiber customers churn at 41.9% vs 19.0% for DSL, and the gap persists in all **9**
-of the 12 contract × payment strata large enough to read (≥100 customers in both
-groups), by 1.8 to 25.8 points. But fiber customers also differ systematically in
-contract mix (68.7% month-to-month vs 50.5%), payment method (51.5% electronic
-check vs 26.8%) and price (\$91.68 vs \$56.15 median).
+### Results on unseen customers
 
-Whether the cause is price, service quality, or local competition **cannot be
-separated with this dataset** — price and product are perfectly bundled, and
-quality and competition are not measured at all. Stratifying on observed variables
-is not the same as controlling for confounding.
+The model was tested once on 1,758 customers it never saw.
 
-Every "we should offer X to segment Y" idea remains a hypothesis requiring an
-experiment.
+- **ROC-AUC 0.839**, almost the same as in training (0.844). No overfitting.
+- **Threshold 0.32 instead of 0.5.** Catches **74%** of churners instead of 57%,
+  but contacts more customers who would have stayed. The right threshold depends
+  on what a lost customer costs versus a wasted contact.
 
-### Modeling (Stage 4)
+**If you can only contact some customers:**
 
-Full comparison in [`notebooks/03_modeling.ipynb`](notebooks/03_modeling.ipynb).
-Cross-validated on the training set only; **the test set is untouched until Stage 5.**
+| Contact the top… | Share of their group who churn | Share of all churners found |
+|---|---|---|
+| 10% | 70% | 26% |
+| 20% | 66% | 50% |
+| 30% | 60% | 68% |
 
-| | accuracy | precision | recall | F1 | ROC-AUC |
-|---|---|---|---|---|---|
-| Predict nobody churns | 0.734 | 0.000 | 0.000 | 0.000 | — |
-| Rule: month-to-month | 0.655 | 0.428 | 0.885 | 0.577 | — |
-| **Logistic regression** | 0.800 | 0.648 | 0.538 | 0.588 | **0.844** |
-| Gradient boosting | 0.802 | 0.659 | 0.529 | 0.587 | 0.850 |
+Contacting the top 20% reaches **half of all churners**.
 
-The more *accurate* baseline is the useless one — it flags nobody. That is why
-accuracy is not the target.
+- **The scores are trustworthy as percentages.** Predicted churn matches actual
+  churn within 5 points in 9 of 10 score bands.
+- **What raises a customer's score:** fiber optic, electronic check, paperless
+  billing, month-to-month contract, short tenure.
+- **What lowers it:** two-year contract, long tenure, online security, tech support.
+- **Ignore streaming and multiple lines in the model.** They raise the score because
+  they cost extra, so they stand in for price, not because they drive churn.
 
-**Three decisions and their evidence:**
+### Main limitation
 
-- **`MonthlyCharges` dropped.** It is a deterministic sum of the service columns
-  (R² = 0.9988 against them, VIF 878) — regressing it on those columns recovers
-  the price list exactly: base \$24.95, fiber +\$24.95, phone +\$20.06, streaming
-  +\$9.97 each. Dropping it cost 0.002 ROC-AUC and removed the collinearity that
-  was flipping `TotalCharges`' sign positive.
-- **No class weighting or resampling.** `class_weight="balanced"` left ROC-AUC
-  unchanged and the ranking correlated at 0.9995 — it only moves the threshold —
-  while pushing the mean out-of-fold probability to 0.414 against a true rate of
-  0.266. Stage 6 needs calibrated probabilities, so the threshold moves in Stage 5.
-- **Logistic regression over gradient boosting.** The tree wins ROC-AUC by 0.006
-  (5/5 folds) but is inconsistent on PR-AUC (3/5), the metric that matters more
-  for a retention list. A flexible model finding almost nothing extra is itself a
-  result: the structure here is close to linear in log-odds.
-
-At the default 0.5 threshold the model's recall (0.538) is *worse* than the dumb
-rule's (0.885). The model ranks far better; the cut-off simply has not been
-chosen yet. That is Stage 5's main job.
-
-### A limitation that shapes the modeling
-
-This dataset is a **snapshot**. Every column is measured at one moment and `Churn`
-means *left within the last month* — there is no observation window, event date or
-"as of" timestamp, so the data has **no defined prediction point**.
-
-A model built on it learns to separate customers who have already churned from
-those who have not, using their current attributes. That is legitimate risk
-scoring, and it is what this data supports — but it is not forecasting, and its
-output should not be described as "probability of churning next month". A
-production version would need event timestamps and an explicit prediction window.
+The data is a single snapshot with no dates. The model spots customers who look
+like past churners. It can't predict "who leaves next month". That would need
+data with dates.
