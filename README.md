@@ -3,7 +3,7 @@
 Which telecom customers are leaving, what they have in common, who is likely to
 leave next, and who the company should contact first.
 
-> **Status:** Stages 1–5 done. Next: retention priority list and dashboard.
+> **Status:** Stages 1–6 analysis done. Next: Tableau dashboard and final write-up.
 
 ---
 
@@ -77,7 +77,8 @@ reports/figures/   charts
 - [x] 3. Exploratory analysis ([notebook](notebooks/02_exploratory_analysis.ipynb))
 - [x] 4. Modeling ([notebook](notebooks/03_modeling.ipynb))
 - [x] 5. Evaluation ([notebook](notebooks/04_evaluation.ipynb))
-- [ ] 6. Priority list, dashboard and final findings
+- [x] 6. Priority list ([notebook](notebooks/05_prioritization.ipynb))
+- [ ] 7. Dashboard and final findings
 
 ---
 
@@ -182,6 +183,45 @@ stay: median tenure 24 months (vs 7 for caught churners), 40% on one- or two-yea
 contracts, and a quarter with no internet. It misses **48 of the 53** contract
 churners. Nothing in this data separates a contract customer who will leave from
 one who will stay; that would need signals like complaints or contract end dates.
+
+### Who to contact first
+
+This is a **ranking system, not proof that contacting customers prevents churn.**
+
+Every current customer (5,163) gets a churn score and a **monthly bill at risk =
+score × monthly bill**. It's a ranking number, not a dollar loss (there's no
+profit data). Customers are ranked by it and split into four groups, using the
+Stage 5 score cutoff (0.32) and the median bill ($64.45) as a simple business rule:
+
+![Priority buckets](reports/figures/12_priority_buckets.png)
+
+| Group | Customers | Share of bill at risk |
+|---|---|---|
+| **Contact first** (high risk, high bill) | 830 | **57%** |
+| Low-cost outreach (high risk, low bill) | 277 | 8% |
+| Monitor (low risk, high bill) | 1,755 | 24% |
+| Leave alone (low risk, low bill) | 2,301 | 11% |
+
+**Risk × bill vs risk alone is a small trade-off** (top 20% of customers):
+
+| Ranking | Churners caught | Churned billing reached |
+|---|---|---|
+| Risk only | **50.8%** | 55.9% |
+| Risk × bill | 48.8% | **57.1%** |
+| Simple rule (month-to-month fiber, highest bill first) | 39.5% | 49.5% |
+
+![Ranking comparison](reports/figures/11_ranking_comparison.png)
+
+- Adding the bill reaches 1.3 points more billing but catches 2 points fewer
+  churners. It's small, because risky customers here already pay more.
+- The model clearly beats the simple rule for short lists. At 30% of customers
+  they nearly tie.
+- **The top 500 are all fiber** (97% month-to-month). That's expected: fiber
+  raises both the risk score and the bill, and no DSL customer ranks above 537.
+
+The full list is in [`dashboard/data/priority_list.csv`](dashboard/data/priority_list.csv).
+Before acting on it, test offers on a random half of "Contact first" and compare
+churn with the other half.
 
 ### Main limitation
 
