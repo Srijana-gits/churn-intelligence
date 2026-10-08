@@ -141,30 +141,47 @@ can't tell whether the cause is price, service quality or competitors.
 
 ### Results on unseen customers
 
-The model was tested once on 1,758 customers it never saw.
+The model was tested once on 1,758 customers it never saw. **ROC-AUC 0.839**
+(likely range 0.82–0.86), almost the same as in training (0.844), so no overfitting.
 
-- **ROC-AUC 0.839**, almost the same as in training (0.844). No overfitting.
-- **Threshold 0.32 instead of 0.5.** Catches **74%** of churners instead of 57%,
-  but contacts more customers who would have stayed. The right threshold depends
-  on what a lost customer costs versus a wasted contact.
+**Who to contact first.** Ranking customers by score and working down the list:
 
-**If you can only contact some customers:**
+![Gains curve](reports/figures/08_gains_curve.png)
 
-| Contact the top… | Share of their group who churn | Share of all churners found |
+| Contact the top… | Share of them who churn | Share of all churners found |
 |---|---|---|
 | 10% | 70% | 26% |
 | 20% | 66% | 50% |
 | 30% | 60% | 68% |
 
-Contacting the top 20% reaches **half of all churners**.
+Contacting the top 20% reaches **half of all churners**, versus 20% by random choice.
 
-- **The scores are trustworthy as percentages.** Predicted churn matches actual
-  churn within 5 points in 9 of 10 score bands.
-- **What raises a customer's score:** fiber optic, electronic check, paperless
-  billing, month-to-month contract, short tenure.
-- **What lowers it:** two-year contract, long tenure, online security, tech support.
-- **Ignore streaming and multiple lines in the model.** They raise the score because
-  they cost extra, so they stand in for price, not because they drive churn.
+**Picking a threshold.** At 0.32 instead of the default 0.5, the model catches
+**74%** of churners instead of 57%, but contacts more customers who would have
+stayed. The right threshold depends on what a lost customer costs versus a wasted
+contact.
+
+![Threshold trade-off](reports/figures/07_threshold_tradeoff.png)
+
+**The scores can be read as percentages.** Predicted churn matches actual churn
+within 5 points in 9 of 10 score bands.
+
+![Calibration](reports/figures/09_calibration.png)
+
+**What moves the score.** Fiber optic, electronic check and paperless billing push
+it up. Two-year contracts, long tenure, online security and tech support pull it
+down.
+
+![What moves the score](reports/figures/10_score_drivers.png)
+
+Ignore streaming and multiple lines here. They raise the score because they cost
+extra, so they stand in for price. They aren't a cause of churn.
+
+**Who the model misses.** The 120 churners it didn't flag look like customers who
+stay: median tenure 24 months (vs 7 for caught churners), 40% on one- or two-year
+contracts, and a quarter with no internet. It misses **48 of the 53** contract
+churners. Nothing in this data separates a contract customer who will leave from
+one who will stay; that would need signals like complaints or contract end dates.
 
 ### Main limitation
 
