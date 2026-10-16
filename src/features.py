@@ -37,6 +37,16 @@ CATEGORICAL_FEATURES = [
 ]
 
 
+def prepare_features(data):
+    """Apply the same deterministic representation rules to training and scoring."""
+    data = data.copy()
+    data["SeniorCitizen"] = data["SeniorCitizen"].astype(str)
+    for column in SERVICE_COLUMNS:
+        data[column] = data[column].replace("No internet service", "No")
+    data["MultipleLines"] = data["MultipleLines"].replace("No phone service", "No")
+    return data
+
+
 def load_modelling_data():
     """Cleaned data, minus the rows that cannot be modelled.
 
@@ -51,11 +61,7 @@ def load_modelling_data():
 
     # SeniorCitizen is categorical despite its 0/1 storage; make that explicit so
     # it is never treated as a number by accident.
-    data["SeniorCitizen"] = data["SeniorCitizen"].astype(str)
-
-    for column in SERVICE_COLUMNS:
-        data[column] = data[column].replace("No internet service", "No")
-    data["MultipleLines"] = data["MultipleLines"].replace("No phone service", "No")
+    data = prepare_features(data)
 
     data["y"] = (data[TARGET] == "Yes").astype(int)
     print(f"{len(data):,} customers for modelling ({excluded} with tenure = 0 excluded)")

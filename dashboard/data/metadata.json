@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "clean_data_sha256": "7dd93bbff704f59a3044237c6695f4cfb2ee1b6faff6c21265b2e4044195cbd8",
+  "total_customers": 7043,
+  "eligible_customers": 7032,
+  "excluded_customers": 11,
+  "current_customers": 5174,
+  "eligible_current_customers": 5163,
+  "risk_cutoff": 0.31871380378169745,
+  "value_cutoff": 64.45,
+  "score_method": "retrospective_5_fold_oof",
+  "ranking_comparison": "exploratory; model selection reused this dataset",
+  "bill_at_risk": "score \u00d7 monthly bill; ranking measure, not expected losses or savings"
+}

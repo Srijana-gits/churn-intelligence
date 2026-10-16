@@ -110,8 +110,12 @@ def convert_numeric(df: pd.DataFrame) -> pd.DataFrame:
     that a never-billed customer has paid $1397. That fabricates data.
     """
     df = df.copy()
+    # Only blanks are the documented defect. Reject corrupt text rather than
+    # quietly turning it into a missing charge and then fabricating a zero.
+    total_blank = df["TotalCharges"].eq("")
     for col in NUMERIC_COLUMNS:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        values = df[col].mask(total_blank) if col == "TotalCharges" else df[col]
+        df[col] = pd.to_numeric(values, errors="raise")
 
     missing_total = df["TotalCharges"].isna()
 
@@ -124,6 +128,8 @@ def convert_numeric(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[missing_total, "TotalCharges"] = 0.0
 
     # tenure is a whole number of months; store it as an integer.
+    if df["tenure"].isna().any() or (df["tenure"] % 1 != 0).any():
+        raise ValueError("tenure must contain whole months")
     df["tenure"] = df["tenure"].astype("int64")
     return df
 

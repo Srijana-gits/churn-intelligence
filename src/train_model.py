@@ -21,6 +21,8 @@ Run from the project root:  python src/train_model.py
 """
 
 import sys
+import argparse
+import json
 from pathlib import Path
 
 import joblib
@@ -32,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from features import PROJECT_ROOT, load_modelling_data, make_preprocessor, split
 
 MODEL_PATH = PROJECT_ROOT / "models" / "churn_logistic_regression.joblib"
+SCORING_MODEL_PATH = PROJECT_ROOT / "models" / "churn_scoring.joblib"
 MODEL_FEATURES = ["tenure"]   # numeric features kept; categoricals are always included
 
 
@@ -45,7 +48,28 @@ def build_model():
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--full-data", action="store_true",
+                        help="Fit a separate scoring artifact on all eligible rows after evaluation.")
+    args = parser.parse_args()
     data = load_modelling_data()
+    if args.full_data:
+        from evaluate_model import load_evaluation
+        from features import CATEGORICAL_FEATURES
+        import sklearn
+
+        evaluation = load_evaluation()
+        X = data[MODEL_FEATURES + CATEGORICAL_FEATURES]
+        model = build_model().fit(X, data["y"])
+        SCORING_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(model, SCORING_MODEL_PATH)
+        metadata = {"training_rows": len(data), "clean_data_sha256": evaluation["clean_data_sha256"],
+                    "threshold": evaluation["threshold"], "sklearn_version": sklearn.__version__,
+                    "score_method": "full_data_fitted_model",
+                    "value_cutoff": float(data.loc[data["Churn"].eq("No"), "MonthlyCharges"].median())}
+        SCORING_MODEL_PATH.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")
+        print(f"Saved separate scoring model fitted on {len(data):,} eligible rows")
+        return
     X_train, X_test, y_train, y_test = split(data)
 
     model = build_model().fit(X_train, y_train)

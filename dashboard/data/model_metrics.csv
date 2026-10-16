@@ -1,0 +1,5 @@
+metric,value
+roc_auc,0.8386266642560835
+average_precision,0.6230550436003738
+brier_score,0.13858840107574094
+base_rate_brier,0.19507672745528357

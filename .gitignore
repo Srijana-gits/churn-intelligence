@@ -25,3 +25,9 @@ data/processed/*
 
 # Trained models — rebuilt by src/train_model.py
 models/
+
+# Local Hyper process logs
+hyperd.log
+
+# Tableau recovery / lock files
+*.twbr

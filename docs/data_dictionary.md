@@ -3,6 +3,12 @@
 Produced by `src/clean_data.py` from `data/raw/telco_customer_churn.csv`.
 **7,043 rows × 21 columns. One row per customer. No missing values.**
 
+This document records the original investigation. Representation and feature
+selection are now implemented in `src/features.py` and `src/train_model.py` during
+Stage 4. Stage 5 evaluates the fixed model and selects the threshold. The dashboard
+retains all 7,043 rows for descriptive charts, while scoring excludes the 11
+zero-tenure customers. See `dashboard/README.md` for the current export contract.
+
 All churn rates below are computed from the cleaned file. The overall baseline is
 **26.54%** (1,869 churned / 5,174 retained).
 

@@ -3,7 +3,8 @@
 Which telecom customers are leaving, what they have in common, who is likely to
 leave next, and who the company should contact first.
 
-> **Status:** Stages 1–6 analysis done. Next: Tableau dashboard and final write-up.
+> **Status:** Analysis, scripted exports, checks, and final findings are complete.
+> A local Tableau workbook is included; desktop rendering validation is pending.
 
 ---
 
@@ -48,12 +49,43 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python src/validate_raw.py   # check the raw file
-python src/clean_data.py     # build data/processed/telco_clean.csv
-python src/train_model.py    # train and save the model
+python src/run_pipeline.py  # rebuild data, evaluation, models, and Tableau package
+python -m unittest discover -s tests -v
 ```
 
-Run the cleaning script before opening the notebooks.
+The pipeline validates and cleans the raw file, fits the evaluation model,
+reproduces the fixed held-out evaluation, saves the exact training-OOF threshold,
+exports dashboard data, builds the Tableau package, and fits a separate scoring
+model on all eligible rows. No notebook execution is required for these outputs.
+The exploratory charts remain in the notebooks; run notebooks 01–05 in order to
+regenerate all analysis figures. Run the pipeline before notebooks 04 and 05.
+
+Repeating evaluation reproduces the existing experiment; it is not a new
+independent test. Do not tune the model against its held-out results.
+
+### Dashboard
+
+Open [`dashboard/churn_intelligence.twbx`](dashboard/churn_intelligence.twbx) in
+Tableau Public or Tableau Desktop. The package includes the CSVs and three views:
+overview, model performance, and customer priorities. Contact-table filters select
+priority bucket, contract, and internet service. See the
+[dashboard guide](dashboard/README.md) for populations, refresh instructions, and
+score definitions, and the [final findings](reports/final_findings.md) for conclusions.
+
+### Score another current-customer file
+
+```bash
+python src/train_model.py --full-data
+python src/score_customers.py path/to/current_customers.csv data/processed/current_scores.csv
+```
+
+The input needs `customerID`, `tenure`, `MonthlyCharges`, and the 16 categorical
+features listed in `src/features.py`. `Churn` is optional; if supplied, all rows
+must be `No`. Unknown categories, invalid numbers, missing fields, and duplicate
+IDs fail clearly. Zero-tenure customers remain in the output without a score or
+rank. This workflow uses `models/churn_scoring.joblib`, a separate full-data model,
+and labels its scores `full_data_fitted_model`. The dashboard retains retrospective
+five-fold out-of-fold scores. Neither workflow establishes future-month risk.
 
 ---
 
@@ -78,7 +110,8 @@ reports/figures/   charts
 - [x] 4. Modeling ([notebook](notebooks/03_modeling.ipynb))
 - [x] 5. Evaluation ([notebook](notebooks/04_evaluation.ipynb))
 - [x] 6. Priority list ([notebook](notebooks/05_prioritization.ipynb))
-- [ ] 7. Dashboard and final findings
+- [x] 7. Dashboard workbook and final findings
+- [ ] Validate workbook rendering in Tableau and capture a screenshot
 
 ---
 
@@ -143,7 +176,8 @@ can't tell whether the cause is price, service quality or competitors.
 ### Results on unseen customers
 
 The model was tested once on 1,758 customers it never saw. **ROC-AUC 0.839**
-(likely range 0.82–0.86), almost the same as in training (0.844), so no overfitting.
+(likely range 0.82–0.86), similar to training cross-validation (0.844).
+This is reassuring, but does not establish performance on future customers.
 
 **Who to contact first.** Ranking customers by score and working down the list:
 
@@ -164,8 +198,9 @@ contact.
 
 ![Threshold trade-off](reports/figures/07_threshold_tradeoff.png)
 
-**The scores can be read as percentages.** Predicted churn matches actual churn
-within 5 points in 9 of 10 score bands.
+**Calibration is reasonable on this dataset.** Predicted churn matches actual
+churn within 5 points in 9 of 10 test score bands. This does not validate
+future-month probabilities.
 
 ![Calibration](reports/figures/09_calibration.png)
 
@@ -181,8 +216,8 @@ extra, so they stand in for price. They aren't a cause of churn.
 **Who the model misses.** The 120 churners it didn't flag look like customers who
 stay: median tenure 24 months (vs 7 for caught churners), 40% on one- or two-year
 contracts, and a quarter with no internet. It misses **48 of the 53** contract
-churners. Nothing in this data separates a contract customer who will leave from
-one who will stay; that would need signals like complaints or contract end dates.
+churners. The model struggles with this group; complaints or contract end dates
+could provide useful additional signals.
 
 ### Who to contact first
 
@@ -191,18 +226,27 @@ This is a **ranking system, not proof that contacting customers prevents churn.*
 Every current customer (5,163) gets a churn score and a **monthly bill at risk =
 score × monthly bill**. It's a ranking number, not a dollar loss (there's no
 profit data). Customers are ranked by it and split into four groups, using the
-Stage 5 score cutoff (0.32) and the median bill ($64.45) as a simple business rule:
+exact Stage 5 score cutoff (0.31871380378169745, displayed as 0.32) and the median
+bill ($64.45) as a simple business rule:
 
 ![Priority buckets](reports/figures/12_priority_buckets.png)
 
 | Group | Customers | Share of bill at risk |
 |---|---|---|
-| **Contact first** (high risk, high bill) | 830 | **57%** |
-| Low-cost outreach (high risk, low bill) | 277 | 8% |
-| Monitor (low risk, high bill) | 1,755 | 24% |
-| Leave alone (low risk, low bill) | 2,301 | 11% |
+| **Contact first** (high risk, high bill) | 835 | **57%** |
+| Low-cost outreach (high risk, low bill) | 280 | 8% |
+| Monitor (low risk, high bill) | 1,750 | 24% |
+| Leave alone (low risk, low bill) | 2,298 | 11% |
 
-**Risk × bill vs risk alone is a small trade-off** (top 20% of customers):
+These counts use the exact persisted threshold. The earlier rounded `0.32`
+cutoff produced 830 / 277 / 1,755 / 2,301 customers instead. The ranking is unchanged.
+All 7,043 customers are retained for descriptive dashboard charts; 7,032 are
+eligible for scoring and 5,163 of those are current customers. The 11 zero-tenure
+customers are explicitly marked as unscored, rather than assigned zero risk.
+
+**Risk × bill vs risk alone is a small trade-off** (top 20% of customers).
+This full-population OOF comparison is exploratory: model selection reused the
+dataset, so it is not an independent held-out policy evaluation.
 
 | Ranking | Churners caught | Churned billing reached |
 |---|---|---|
