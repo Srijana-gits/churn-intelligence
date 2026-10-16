@@ -20,13 +20,13 @@ customers churn or whether an intervention will retain them.
 - Contacting the top **20%** by score reached about **half of observed churners**.
 - The priority list identifies **835 high-risk, high-bill customers** for first review.
 
-[Open the Tableau workbook](dashboard/churn_intelligence.twbx) ·
+[View the interactive Tableau dashboard](https://public.tableau.com/app/profile/srijana.shrestha8012/viz/churn_intelligence/Customerpriorities) ·
+[Download the Tableau workbook](dashboard/churn_intelligence.twbx) ·
 [Read the final findings](reports/final_findings.md) ·
 [Read the dashboard guide](dashboard/README.md)
 
-The workbook is downloadable from GitHub. GitHub does not render Tableau
-interactively; publish the workbook to Tableau Public and add that URL here when
-you want browser-based viewing.
+The interactive dashboard is published on Tableau Public. The workbook is also
+downloadable from GitHub for local inspection.
 
 ---
 
