@@ -35,7 +35,7 @@ downloadable from GitHub for local inspection.
 1. **Who is churning?**
 2. **What is churn linked to?** (linked, not caused)
 3. **Who is likely to churn?** (a model that scores each customer)
-4. **Who should we contact first?** (risk combined with customer value)
+4. **Which customers should be contacted first?** (risk combined with customer value)
 
 A model can say who is likely to leave. It can't say whether an offer will make
 them stay. That needs a real test.
@@ -54,7 +54,7 @@ in `data/raw/`.
 
 Full details are in [`docs/data_dictionary.md`](docs/data_dictionary.md).
 
-| Issue | What we did |
+| Issue | Treatment |
 |---|---|
 | `TotalCharges` had 11 blank values | Set them to 0. These customers are brand new (tenure 0), so 0 is correct |
 | Those 11 new customers | Left out of the model. They can't have churned yet |
@@ -159,8 +159,8 @@ Everything below shows which traits go **together** with churn, not what causes 
 
 ![Strength of each variable](reports/figures/05_effect_sizes.png)
 
-With 7,000 customers almost everything looks "statistically significant", so we
-ranked variables by how **big** the difference is.
+With 7,000 customers almost everything looks "statistically significant", so
+variables are ranked by how **large** the difference is.
 
 - **Gender:** no difference (26.2% vs 26.9%).
 - **Multiple lines** and **streaming:** tiny differences.
