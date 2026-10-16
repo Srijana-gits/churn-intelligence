@@ -1,14 +1,36 @@
 # Churn Intelligence — Telco Customer Retention
 
-Which telecom customers are leaving, what they have in common, who is likely to
-leave next, and who the company should contact first.
+Churn Intelligence is an end-to-end customer retention analytics project built
+on IBM’s Telco Customer Churn dataset. It identifies customer groups associated
+with churn, evaluates an interpretable logistic regression model, and ranks
+current customers for retention outreach using churn risk and monthly bill.
 
-> **Status:** Analysis, scripted exports, checks, and final findings are complete.
-> A local Tableau workbook is included; desktop rendering validation is pending.
+The project includes reproducible Python scripts, evaluation checks,
+customer-level priority exports, and a Tableau dashboard. The findings describe
+historical associations and ranking performance; they do not establish why
+customers churn or whether an intervention will retain them.
+
+> **Status:** Complete and reproducible. The Tableau workbook has been opened and
+> reviewed locally; a public Tableau link can be added after publishing.
+
+## At a glance
+
+- **7,043** customers analyzed; **26.54%** observed churn.
+- Logistic regression reached **0.839 ROC-AUC** on 1,758 held-out customers.
+- Contacting the top **20%** by score reached about **half of observed churners**.
+- The priority list identifies **835 high-risk, high-bill customers** for first review.
+
+[Open the Tableau workbook](dashboard/churn_intelligence.twbx) ·
+[Read the final findings](reports/final_findings.md) ·
+[Read the dashboard guide](dashboard/README.md)
+
+The workbook is downloadable from GitHub. GitHub does not render Tableau
+interactively; publish the workbook to Tableau Public and add that URL here when
+you want browser-based viewing.
 
 ---
 
-## The questions
+## The business questions
 
 1. **Who is churning?**
 2. **What is churn linked to?** (linked, not caused)
@@ -111,7 +133,6 @@ reports/figures/   charts
 - [x] 5. Evaluation ([notebook](notebooks/04_evaluation.ipynb))
 - [x] 6. Priority list ([notebook](notebooks/05_prioritization.ipynb))
 - [x] 7. Dashboard workbook and final findings
-- [ ] Validate workbook rendering in Tableau and capture a screenshot
 
 ---
 
